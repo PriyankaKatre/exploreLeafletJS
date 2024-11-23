@@ -92,67 +92,61 @@ function getRandomColor() {
 }
 
 const stateColors = {
-    "Madhya Pradesh": { fillColor: "#FF5733", borderColor: "#C70039" },
-    "Maharashtra": { fillColor: "#33FF57", borderColor: "#39C700" },
-    Assam: { fillColor: "#3357FF", borderColor: "#0039C7" }, // Add specific colors for the rest of the states... };
+  "Madhya Pradesh": { fillColor: "#FF5733", borderColor: "#C70039" },
+  Maharashtra: { fillColor: "#33FF57", borderColor: "#39C700" },
+  Assam: { fillColor: "#3357FF", borderColor: "#0039C7" }, // Add specific colors for the rest of the states... };
 };
 
 // Function to load a GeoJSON file
 const loadGeoJson = (filePath) => {
-    return fetch(filePath).then(response => response.json());
+  return fetch(filePath).then((response) => response.json());
 };
 
-// Main function to combine GeoJSON files and apply random colors
-const combineGeoJsonWithColors = async (filePaths) => {
-    let combinedFeatures = [];
+// Main function to load and display GeoJSON with specific colors
+const displayGeoJsonWithColors = async (filePaths) => {
+  let combinedFeatures = [];
 
-    for (const filePath of filePaths) {
-        try {
-            const geojson = await loadGeoJson(filePath);
-            geojson.features.forEach(feature => {
-                // Assign random colors to each feature
-                feature.properties.fillColor = stateColors[stateName].fillColor;
-                feature.properties.borderColor =
-                    stateColors[stateName].borderColor;
-                combinedFeatures.push(feature);
-            });
-        } catch (error) {
-            console.error('Error loading GeoJSON:', error);
-        }
+  for (const filePath of filePaths) {
+    try {
+      const geojson = await loadGeoJson(filePath);
+      combinedFeatures = combinedFeatures.concat(geojson.features);
+    } catch (error) {
+      console.error("Error loading GeoJSON:", error);
     }
+  }
 
-    const combinedGeoJson = {
-        type: 'FeatureCollection',
-        features: combinedFeatures
-    };
+  const combinedGeoJson = {
+    type: "FeatureCollection",
+    features: combinedFeatures,
+  };
 
-    // Log the combined GeoJSON or save it as needed
-    console.log('Combined GeoJSON:', JSON.stringify(combinedGeoJson));
+  // Initialize the map centered on Madhya Pradesh
+  const map = L.map("map").setView([23.2599, 77.4126], 7);
 
-    // Initialize the map centered on India
-    const map = L.map('map').setView([20.5937, 78.9629], 5);
+  // Add a tile layer (OpenStreetMap)
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
 
-    // Add a tile layer (OpenStreetMap)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Add GeoJSON layer to the map with random colors
-    L.geoJSON(combinedGeoJson, {
-        style: function (feature) {
-            return {
-                color: feature.properties.borderColor,   // Use the random border color assigned
-                weight: 1,                               // Border width
-                fillColor: feature.properties.fillColor, // Use the random fill color assigned
-                fillOpacity: 0.6                         // Opacity of the fill
-            };
-        },
-        onEachFeature: function (feature, layer) {
-            // Add popup with state name
-            layer.bindPopup(feature.properties.name);
-        }
-    }).addTo(map);
+  // Add GeoJSON layer to the map with specific colors
+  L.geoJSON(combinedGeoJson, {
+    style: function (feature) {
+      return {
+        color: feature.properties.borderColor, // Use the specific border color assigned
+        weight: 2, // Border width
+        fillColor: feature.properties.fillColor, // Use the specific fill color assigned
+        fillOpacity: 0.6, // Opacity of the fill
+      };
+    },
+    onEachFeature: function (feature, layer) {
+      // Add popup with district name
+      layer.bindPopup(
+        `${feature.properties.district}, ${feature.properties.st_nm}`
+      );
+    },
+  }).addTo(map);
 };
 
-// Combine the GeoJSON files and apply random colors
-combineGeoJsonWithColors(geojsonFiles);
+// Display the GeoJSON files with specific colors
+displayGeoJsonWithColors(geojsonFiles);
